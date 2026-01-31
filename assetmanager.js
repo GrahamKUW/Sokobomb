@@ -6,6 +6,19 @@ class AssetManager {
         this.downloadQueue = [];
     };
 
+    queueManifest(manifestData) {
+        if (manifestData === null || manifestData === undefined) {
+            throw new Error(
+                "Cannot queue manifest data for download thats null or undefined!",
+            );
+        }
+
+        // download all in the manifest
+        for (let i = 0; i < manifestData.length; i++) {
+            this.queueDownload(manifestData[i]);
+        }
+    }
+
     queueDownload(path) {
         console.log("Queueing " + path);
         this.downloadQueue.push(path);
