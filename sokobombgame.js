@@ -231,9 +231,17 @@ class GameLevel{
         
         // if trying to move box into another box - could be a way to solve puzzles later?
         if(this.levelData[boxDesPos.y].charAt(boxDesPos.x) === 'B'){
+            
             return;
         }
 
+        // if trying to move box into another goal which is counted as box - could be a way to solve puzzles later?
+        if(this.levelData[boxDesPos.y].charAt(boxDesPos.x) === 'G'){
+            
+            return;
+        }
+
+        console.log(this.levelData);
         this.player.posX += input.x;
         this.player.posY += input.y;
         this.gameplayData.movesMade += 1;
