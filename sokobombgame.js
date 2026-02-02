@@ -3,7 +3,7 @@
 const GLOBAL_CELL_SIZE_X = 16;
 const GLOBAL_CELL_SIZE_Y = 16;
 const INPUT_COOLDOWN = 0.15;
-const MAX_MOVES = 20;
+const MAX_MOVES = 14;
 
 /*
  * U = empty goal
