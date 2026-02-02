@@ -292,7 +292,7 @@ class GameLevel{
         if(this.gameplayData.wGoals === this.gameplayData.rGoals){
             this.gameplayData.state = "WIN";
         }
-        if(this.gameplayData.movesMade >= this.gameplayData.maxMoves){
+        else if(this.gameplayData.movesMade >= this.gameplayData.maxMoves){
             this.gameplayData.state = "LOSE";
         }
     }
@@ -455,16 +455,16 @@ function gatherInput(gameEngine){
         result.y -= 1;
         anythingPressed = true;
     }
-    if (gameEngine.keys['ArrowDown'] || gameEngine.keys['s']) {
+    else if (gameEngine.keys['ArrowDown'] || gameEngine.keys['s']) {
         result.y += 1;
         anythingPressed = true;
         
     }
-    if (gameEngine.keys['ArrowLeft'] || gameEngine.keys['a']) {
+    else if (gameEngine.keys['ArrowLeft'] || gameEngine.keys['a']) {
         result.x -= 1;
         anythingPressed = true;
     }
-    if (gameEngine.keys['ArrowRight'] || gameEngine.keys['d']) {
+    else if (gameEngine.keys['ArrowRight'] || gameEngine.keys['d']) {
         result.x += 1;
         anythingPressed = true;
     }
