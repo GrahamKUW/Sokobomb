@@ -241,7 +241,6 @@ class GameLevel{
             return;
         }
 
-        console.log(this.levelData);
         this.player.posX += input.x;
         this.player.posY += input.y;
         this.gameplayData.movesMade += 1;
