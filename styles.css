@@ -1,5 +1,6 @@
 html {
   font-size: 62.5%;
+  font-family: "Pixelify Sans", sans-serif;
 }
 
 body {
@@ -11,4 +12,34 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-bottom: 0rem;
+}
+
+.project-list{
+  list-style: none;
+}
+
+.info-area {
+  margin-top: 0rem;
+  padding-top: 0rem;
+  background: #9bbc0f;
+  border: 2px solid #2e2a3c;
+}
+
+.info-list{ 
+  
+  
+  list-style: none;
+  font-size: 1.6rem;
+  color: #2e2a3c;
+}
+
+.info-title {
+  font-size: 3.2rem;
+  margin-bottom: 0;
+}
+
+.info-description{
+  padding-top: 0;
+  margin-top: 0;
 }

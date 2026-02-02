@@ -81,11 +81,13 @@ function drawSprite(ctx, image, tcX, tcY,tsW, tsH, x, y, width, height){
 
 class GameLevel{
 
-    constructor(gameEngine, levelData, palette, player, maxMoves = 1, x = 0, y = 0, scaleX = 1, scaleY = 1){
+    constructor(gameEngine, levelData, palette, maxMoves = 1, x = 0, y = 0, scaleX = 1, scaleY = 1, startPosition = {x: 1, y: 4}){
+        this.removeFromWorld = false;
+        this.orginalLevelData = structuredClone(levelData);
         // setup level data
         this.gameEngine = gameEngine;
         this.palette = palette;
-        this.player = player;
+        this.player = new Player(ASSET_MANAGER.getAsset(GameManifest.data[1]));;
         this.x = x;
         this.y = y;
         this.scaleX = scaleX;
@@ -97,27 +99,32 @@ class GameLevel{
         // This is the actual level data, abstract later.
         // States PLAYING, WIN, IMPOSSIBLE, LOSE, DEBUG
         this.gameplayData = {wGoals: 0, rGoals: 0, boxCount: 0, movesMade: 0, maxMoves: maxMoves, state: "PLAYING"} // currently Won goals, required goals to win, box count
-        this.startPosition = {x: 1, y: 3}
+        this.startPosition = startPosition;
         this.levelData = levelData; // more of a map
         this.background = new SolidBackground();
 
         // User Interface
         this.textDisplay = new UIText("Text", 10, 107);
         this.titleDisplay = new UIText("SOKOBOMB", 10, 67);
+        this.resetButton = new Button("Reset", 10, 147,100, 20, () => {
+            // reset function
+            this.gameEngine.addEntity(new GameLevel(this.gameEngine, this.orginalLevelData , this.palette, this.gameplayData.maxMoves, this.x, this.y, this.scaleX, this.scaleY, this.startPosition));
+            this.removeFromWorld = true; 
+        });
 
         // setup player in level
-        player.posX = this.startPosition.x;
-        player.posY = this.startPosition.y;
-        player.scaleX = scaleX;
-        player.scaleY = scaleY;
-        player.offsetX = x;
-        player.offsetY = y;
+        this.player.posX = this.startPosition.x;
+        this.player.posY = this.startPosition.y;
+        this.player.scaleX = scaleX;
+        this.player.scaleY = scaleY;
+        this.player.offsetX = x;
+        this.player.offsetY = y;
 
         
 
         // validate levelData
-        if(this.isInvalidPosition(player.posX, player.posY)){
-            throw new Error("Player started at invalid position ("+player.posX + ", "+player.posY+")");
+        if(this.isInvalidPosition(this.player.posX, this.player.posY)){
+            throw new Error("Player started at invalid position ("+this.player.posX + ", "+this.player.posY+")");
         }
         
         if(maxMoves <= 0){
@@ -157,6 +164,7 @@ class GameLevel{
         // User Interface After Everything else.
         this.textDisplay.draw(ctx);
         this.titleDisplay.draw(ctx);
+        this.resetButton.draw(ctx);
     }
 
     update(){
@@ -165,6 +173,8 @@ class GameLevel{
 
         this.accountForGameplay();
         
+        this.resetButton.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
+
         if(state !== "PLAYING" && state !== "DEBUG"){
             this.textDisplay.updateText(state);
             return;
@@ -360,6 +370,75 @@ class UIText {
 
 
 }
+
+class Button {
+    constructor(text = "Text", x = 0, y = 0, width = 100, height = 100, onPressButton = null) {
+        
+        this.text = text;
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.remSize = 3.2;
+        this.colorString = "#9bbc0f";
+        this.enabled = true;
+        this.onPressButton = onPressButton;
+    }
+
+    updateButton(mousePos, clickPos, gameEngine) {
+        if(!this.enabled){
+            return;
+        }
+
+        const posInside = mousePos === null ? false : this.pointInside(mousePos.x, mousePos.y);
+        const clickedInside = clickPos === null ? false : this.pointInside(clickPos.x, clickPos.y);
+
+        if(posInside){
+            this.colorString = "#306230";
+            this.remSize = 3.6;
+        }
+        else{
+            this.colorString = "#9bbc0f";
+            this.remSize = 3.2;
+        }
+
+        if (clickPos !== null && posInside && clickedInside) {
+            
+
+            if (this.onPressButton !== null) {
+                this.onPressButton();
+            }
+            gameEngine.click = null;
+            
+        }
+    }
+
+    draw(ctx) {
+        if(!this.enabled){
+            return;
+        }
+
+        ctx.save();
+        
+        ctx.font = this.remSize + "rem Pixelify Sans";
+        //ctx.textAlign = "center";
+        //ctx.textBaseline = "middle";
+        ctx.fillStyle = this.colorString;
+        ctx.fillText(this.text, this.x, this.y);
+        ctx.restore();
+    }
+
+    pointInside(px, py) {
+            return (
+            px >= this.x &&
+            px <= this.x + this.width &&
+            py >= this.y - this.height &&
+            py <= this.y 
+            );
+    }
+}
+
+
 
 function gatherInput(gameEngine){
     //check which direction the player is moving
