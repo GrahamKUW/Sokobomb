@@ -2,7 +2,7 @@ const gameEngine = new GameEngine();
 
 const ASSET_MANAGER = new AssetManager();
 
-const GLOBAL_SCALE = 6;
+
 
 ASSET_MANAGER.queueManifest(GameManifest.data);
 
@@ -13,9 +13,12 @@ ASSET_MANAGER.downloadAll(() => {
 	ctx.imageSmoothingEnabled = false;
 	
 	gameEngine.init(ctx);
-	const gameLevel = new GameLevel(gameEngine, structuredClone(GAME_LEVEL), ASSET_MANAGER.getAsset(GameManifest.data[0]),MAX_MOVES, 175, 40, GLOBAL_SCALE, GLOBAL_SCALE);
-	
-	gameEngine.addEntity(gameLevel);
+
+	const gameLevel3 = new GameLevel(gameEngine, structuredClone(GAME_LEVEL_3), null, ASSET_MANAGER.getAsset(GameManifest.data[0]), LEVEL_3_MAX_MOVES, 175, 120, LEVEL_3_SCALE, LEVEL_3_SCALE, {x: 1, y: 3},"Level 3");
+	const gameLevel2 = new GameLevel(gameEngine, structuredClone(GAME_LEVEL_2), gameLevel3, ASSET_MANAGER.getAsset(GameManifest.data[0]), LEVEL_2_MAX_MOVES, 175, 120, LEVEL_2_SCALE, LEVEL_2_SCALE, {x: 1, y: 4},"Level 2");
+	const gameLevel1 = new GameLevel(gameEngine, structuredClone(GAME_LEVEL), gameLevel2, ASSET_MANAGER.getAsset(GameManifest.data[0]),LEVEL_1_MAX_MOVES, 175, 40, LEVEL_1_SCALE, LEVEL_1_SCALE, {x: 1, y: 4},"Level 1");
+
+	gameEngine.addEntity(gameLevel1);
 
 	gameEngine.start();
 });

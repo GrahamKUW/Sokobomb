@@ -3,14 +3,30 @@
 const GLOBAL_CELL_SIZE_X = 16;
 const GLOBAL_CELL_SIZE_Y = 16;
 const INPUT_COOLDOWN = 0.15;
-const MAX_MOVES = 14;
 
+// -----------------------------------------------------------
+// GAMEPLAY DATA
+// -----------------------------------------------------------
+
+// GAMEPLAY
+const LEVEL_1_MAX_MOVES = 14;
+const LEVEL_2_MAX_MOVES = 22;
+const LEVEL_3_MAX_MOVES = 23;
+
+
+// VISUAL SCALE
+const LEVEL_1_SCALE = 6;
+const LEVEL_2_SCALE = 5;
+const LEVEL_3_SCALE = 5;
+
+// LEVEL DATA
 /*
  * U = empty goal
  * G = winning goal
  * B = box
  * # = wall
  * - = empty space
+ * 0 = Array Filler
  */
 const GAME_LEVEL = [
     "#######",
@@ -21,6 +37,27 @@ const GAME_LEVEL = [
     "#-----#",
     "#######"
 ]
+
+const GAME_LEVEL_2 = [
+    "#######000",
+    "#-----#000",
+    "#---B-####",
+    "#--B-E---#",
+    "#---B--E-#",
+    "#---E----#",
+    "##########"
+]
+
+const GAME_LEVEL_3 = [
+    "########00",
+    "#--E---#00",
+    "#------###",
+    "#--BBB-E-#",
+    "#---#----#",
+    "#---E----#",
+    "##########"
+]
+
 
 function drawLevel(ctx,levelData, palette, x = 0, y = 0, scaleX = 1, scaleY = 1){
 
@@ -81,9 +118,11 @@ function drawSprite(ctx, image, tcX, tcY,tsW, tsH, x, y, width, height){
 
 class GameLevel{
 
-    constructor(gameEngine, levelData, palette, maxMoves = 1, x = 0, y = 0, scaleX = 1, scaleY = 1, startPosition = {x: 1, y: 4}){
+    constructor(gameEngine, levelData, nextGameLevel, palette, maxMoves = 1, x = 0, y = 0, scaleX = 1, scaleY = 1, startPosition = {x: 1, y: 4}, levelName = "Level"){
         this.removeFromWorld = false;
         this.orginalLevelData = structuredClone(levelData);
+        this.nextGameLevel = nextGameLevel;
+
         // setup level data
         this.gameEngine = gameEngine;
         this.palette = palette;
@@ -92,7 +131,6 @@ class GameLevel{
         this.y = y;
         this.scaleX = scaleX;
         this.scaleY = scaleY;
-        
         
         this.inputCounter = -1;
         
@@ -104,13 +142,38 @@ class GameLevel{
         this.background = new SolidBackground();
 
         // User Interface
-        this.textDisplay = new UIText("Text", 10, 107);
+        this.levelName = levelName;
+        
         this.titleDisplay = new UIText("SOKOBOMB", 10, 67);
-        this.resetButton = new Button("Reset", 10, 147,100, 20, () => {
+        this.levelNameDisplay = new UIText(this.levelName, 10, 107);
+        this.gameTextDisplay = new UIText("Text", 10, 147);
+
+        this.volumeDisplayText = new UIText("Volume", 10,750);
+        this.volumeAmountText = new UIText("100%", 150, 750);
+
+        this.volumeDown5Button = new Button("<", 120, 750,30, 20, () => {
+            // volume down 5%
+            console.log("Volume Down 5%");
+        });
+
+        this.volumeUp5Button = new Button(">", 240, 750,30, 20, () => {
+            // volume up 5%
+            console.log("Volume Up 5%");
+        });
+
+        this.resetButton = new Button("Reset", 10, 187,100, 20, () => {
             // reset function
-            this.gameEngine.addEntity(new GameLevel(this.gameEngine, this.orginalLevelData , this.palette, this.gameplayData.maxMoves, this.x, this.y, this.scaleX, this.scaleY, this.startPosition));
+            this.gameEngine.addEntity(new GameLevel(this.gameEngine, this.orginalLevelData, this.nextGameLevel, this.palette, this.gameplayData.maxMoves, this.x, this.y, this.scaleX, this.scaleY, this.startPosition, this.levelName));
             this.removeFromWorld = true; 
         });
+
+        this.continueButton = new Button("Continue", 10, 227, 100, 20, ()=>{
+
+            this.gameEngine.addEntity(this.nextGameLevel);
+            this.removeFromWorld = true; 
+        });
+        
+        this.continueButton.enabled = false;
 
         // setup player in level
         this.player.posX = this.startPosition.x;
@@ -120,10 +183,9 @@ class GameLevel{
         this.player.offsetX = x;
         this.player.offsetY = y;
 
-        
 
         // validate levelData
-        if(this.isInvalidPosition(this.player.posX, this.player.posY)){
+        if(this.startPosition === undefined || this.isInvalidPosition(this.player.posX, this.player.posY)){
             throw new Error("Player started at invalid position ("+this.player.posX + ", "+this.player.posY+")");
         }
         
@@ -162,9 +224,18 @@ class GameLevel{
         this.player.draw(ctx);
 
         // User Interface After Everything else.
-        this.textDisplay.draw(ctx);
+        this.gameTextDisplay.draw(ctx);
         this.titleDisplay.draw(ctx);
         this.resetButton.draw(ctx);
+        this.levelNameDisplay.draw(ctx);
+        this.volumeDisplayText.draw(ctx);
+        this.volumeAmountText.draw(ctx);
+        this.volumeDown5Button.draw(ctx);
+        this.volumeUp5Button.draw(ctx);
+
+        if(this.nextGameLevel !== null && this.nextGameLevel !== undefined){
+            this.continueButton.draw(ctx);
+        }
     }
 
     update(){
@@ -174,13 +245,25 @@ class GameLevel{
         this.accountForGameplay();
         
         this.resetButton.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
+        this.levelNameDisplay.updateText(this.levelName);
+        this.volumeDisplayText.updateText("Volume");
+        this.volumeAmountText.updateText("100%");
+        // check upper and lower bounds for volume to make sure that they are not pressable at 100% or 0%
+        this.volumeDown5Button.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
+        this.volumeUp5Button.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
+        
+        if(this.nextGameLevel !== null && this.nextGameLevel !== undefined){
+            this.continueButton.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
+        }
 
         if(state !== "PLAYING" && state !== "DEBUG"){
-            this.textDisplay.updateText(state);
+            this.gameTextDisplay.updateText(state);
             return;
         }
 
-        this.textDisplay.updateText("MOVES: "+(this.gameplayData.maxMoves - this.gameplayData.movesMade));
+        // update text
+        this.gameTextDisplay.updateText("MOVES: "+(this.gameplayData.maxMoves - this.gameplayData.movesMade));
+        
 
         // player input
         const inputResult = gatherInput(this.gameEngine);
@@ -194,18 +277,18 @@ class GameLevel{
         if (!inputResult.anythingPressed) {
             return;
         }
+        
+        // for multiple players have everything below this comment loop over a player list 
 
         this.player.characterFacing(input);
         //console.log(this.gameplayData);
         // desired position
         const desPos = {x: this.player.posX + input.x, y: this.player.posY + input.y};
         
-
         this.inputCounter = INPUT_COOLDOWN;
         //console.log("Move Input ("+input.x+" ," + input.y + " )");
         // if there is input reset the counter.
         if(this.isInvalidPosition(desPos.x, desPos.y)){
-            
             return;
         }
         // this needs the order changed down
@@ -219,6 +302,7 @@ class GameLevel{
             this.player.posX += input.x;
             this.player.posY += input.y;
             this.gameplayData.movesMade += 1;
+            
             return;
         }
 
@@ -231,13 +315,11 @@ class GameLevel{
         
         // if trying to move box into another box - could be a way to solve puzzles later?
         if(this.levelData[boxDesPos.y].charAt(boxDesPos.x) === 'B'){
-            
             return;
         }
 
         // if trying to move box into another goal which is counted as box - could be a way to solve puzzles later?
         if(this.levelData[boxDesPos.y].charAt(boxDesPos.x) === 'G'){
-            
             return;
         }
 
@@ -280,7 +362,9 @@ class GameLevel{
     }
 
     isInvalidPosition(x, y){
-        return (x >= this.levelData.length || x < 0 || y >= this.levelData[0].length || y < 0 || this.levelData[x].charAt(y) === '#')
+        //x >= this.levelData.length || x < 0 || y >= this.levelData[0].length || y < 0 || 
+        //console.log("("+x+","+y+")");
+        return (this.levelData[y].charAt(x) === '#')
     }
 
     accountForGameplay(){
@@ -290,6 +374,7 @@ class GameLevel{
         }
 
         if(this.gameplayData.wGoals === this.gameplayData.rGoals){
+            this.continueButton.enabled = true;
             this.gameplayData.state = "WIN";
         }
         else if(this.gameplayData.movesMade >= this.gameplayData.maxMoves){
