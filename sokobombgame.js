@@ -118,10 +118,12 @@ function drawSprite(ctx, image, tcX, tcY,tsW, tsH, x, y, width, height){
 
 class GameLevel{
 
-    constructor(gameEngine, levelData, nextGameLevel, palette, maxMoves = 1, x = 0, y = 0, scaleX = 1, scaleY = 1, startPosition = {x: 1, y: 4}, levelName = "Level"){
+    constructor(gameEngine, levelData,audioController, nextGameLevel, palette, maxMoves = 1, x = 0, y = 0, scaleX = 1, scaleY = 1, startPosition = {x: 1, y: 4}, levelName = "Level"){
         this.removeFromWorld = false;
         this.orginalLevelData = structuredClone(levelData);
         this.nextGameLevel = nextGameLevel;
+        this.audioController = audioController;
+        this.isGameOver = false;
 
         // setup level data
         this.gameEngine = gameEngine;
@@ -154,23 +156,31 @@ class GameLevel{
         this.volumeDown5Button = new Button("<", 120, 750,30, 20, () => {
             // volume down 5%
             console.log("Volume Down 5%");
+            this.audioController.volumeDown5();
+            this.audioController.playMoveUIButtonPress();
         });
 
         this.volumeUp5Button = new Button(">", 240, 750,30, 20, () => {
             // volume up 5%
             console.log("Volume Up 5%");
+            this.audioController.volumeUp5();
+            this.audioController.playMoveUIButtonPress();
+
         });
 
         this.resetButton = new Button("Reset", 10, 187,100, 20, () => {
             // reset function
-            this.gameEngine.addEntity(new GameLevel(this.gameEngine, this.orginalLevelData, this.nextGameLevel, this.palette, this.gameplayData.maxMoves, this.x, this.y, this.scaleX, this.scaleY, this.startPosition, this.levelName));
+            this.gameEngine.addEntity(new GameLevel(this.gameEngine, this.orginalLevelData, this.audioController,this.nextGameLevel, this.palette, this.gameplayData.maxMoves, this.x, this.y, this.scaleX, this.scaleY, this.startPosition, this.levelName));
             this.removeFromWorld = true; 
+            this.audioController.playMoveUIButtonPress();
         });
 
         this.continueButton = new Button("Continue", 10, 227, 100, 20, ()=>{
 
             this.gameEngine.addEntity(this.nextGameLevel);
             this.removeFromWorld = true; 
+            this.audioController.playMoveUIButtonPress();
+
         });
         
         this.continueButton.enabled = false;
@@ -247,10 +257,16 @@ class GameLevel{
         this.resetButton.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
         this.levelNameDisplay.updateText(this.levelName);
         this.volumeDisplayText.updateText("Volume");
-        this.volumeAmountText.updateText("100%");
+        this.volumeAmountText.updateText(this.audioController.volumeString());
         // check upper and lower bounds for volume to make sure that they are not pressable at 100% or 0%
-        this.volumeDown5Button.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
+        this.volumeUp5Button.enabled = this.audioController.volume < 0.96;
         this.volumeUp5Button.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
+    
+        this.volumeDown5Button.enabled = this.audioController.volume > 0.04;
+        this.volumeDown5Button.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
+        
+        
+        
         
         if(this.nextGameLevel !== null && this.nextGameLevel !== undefined){
             this.continueButton.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
@@ -258,6 +274,7 @@ class GameLevel{
 
         if(state !== "PLAYING" && state !== "DEBUG"){
             this.gameTextDisplay.updateText(state);
+            
             return;
         }
 
@@ -293,19 +310,19 @@ class GameLevel{
         }
         // this needs the order changed down
         
+        this.audioController?.playMoveSound();
         //BOX PUSHING SYSTEM
 
         // if desired position is a box/bomb
-        //console.log("("+desPos.x+","+desPos.y+")"+ this.levelData[desPos.y].charAt(desPos.x));
+        
 
         if(this.levelData[desPos.y].charAt(desPos.x) !== 'B' && this.levelData[desPos.y].charAt(desPos.x) !== 'G'){
             this.player.posX += input.x;
             this.player.posY += input.y;
             this.gameplayData.movesMade += 1;
-            
             return;
         }
-
+        
         // where the box wants to go.
         const boxDesPos = {x: desPos.x + input.x, y: desPos.y + input.y}
         
@@ -326,6 +343,7 @@ class GameLevel{
         this.player.posX += input.x;
         this.player.posY += input.y;
         this.gameplayData.movesMade += 1;
+        this.audioController.playBoxPush();
 
         // pushing a box
         if(this.levelData[desPos.y].charAt(desPos.x) === 'B'){
@@ -334,6 +352,7 @@ class GameLevel{
             // box pushed into goal?
             if(this.levelData[boxDesPos.y].charAt(boxDesPos.x) === 'E'){
                 this.levelData[boxDesPos.y] = replaceAt(this.levelData[boxDesPos.y], boxDesPos.x, 'G');
+                this.audioController.playGoalComplete();
                 this.gameplayData.wGoals += 1;
             }
             else{
@@ -349,7 +368,7 @@ class GameLevel{
             // box pushed into goal?
             if(this.levelData[boxDesPos.y].charAt(boxDesPos.x) === 'E'){
                 this.levelData[boxDesPos.y] = replaceAt(this.levelData[boxDesPos.y], boxDesPos.x, 'G');
-                
+                this.audioController.playGoalComplete();
             }
             else{
                 // box pushed into other space
@@ -376,9 +395,20 @@ class GameLevel{
         if(this.gameplayData.wGoals === this.gameplayData.rGoals){
             this.continueButton.enabled = true;
             this.gameplayData.state = "WIN";
+
+            if(!this.isGameOver){
+                            
+                this.audioController.playWin();
+                this.isGameOver = true;
+            }
         }
         else if(this.gameplayData.movesMade >= this.gameplayData.maxMoves){
             this.gameplayData.state = "LOSE";
+            if(!this.isGameOver){
+                            
+                this.audioController.playLose();
+                this.isGameOver = true;
+            }
         }
     }
 }
@@ -568,3 +598,93 @@ function replaceAt(originalString, index, replacement) {
   return originalString.slice(0, index) + replacement + originalString.slice(index + 1);
 }
 
+class AudioController{
+
+    constructor(assetManager, ){
+        const defaultVolume = 0.5;
+        this.assetManager = assetManager;
+        this.bgMusic = "./assets/audio/enchanted tiki 86.mp3";
+        this.enabled = false;
+        this.hasStartedBackground = false;
+        this.volume = defaultVolume;
+    }
+
+    start(){
+        if(this.hasStartedBackground || this.enabled){
+            return;
+        }
+
+        this.assetManager.pauseBackgroundMusic();
+        this.assetManager.playAsset(this.bgMusic);
+        this.assetManager.autoRepeat(this.bgMusic);
+        this.assetManager.adjustVolume(this.volume);
+        this.hasStartedBackground = true;
+        this.enabled = true;
+    }
+
+    playBoxPush(){
+        if(!this.enabled){
+            return;
+        }
+
+        this.assetManager.playAsset("./assets/audio/madeira.wav");
+    }
+
+    playGoalComplete(){
+        if(!this.enabled){
+            return;
+        }
+        this.assetManager.playAsset("./assets/audio/completetask_0.mp3");
+    }
+
+    playMoveSound(){
+        if(!this.enabled){
+            return;
+        }
+
+        this.assetManager.playAsset("./assets/audio/step_1.wav");
+    }
+
+    playMoveUIButtonPress(){
+        if(!this.enabled){
+            return;
+        }
+
+        this.assetManager.playAsset("./assets/audio/vgmenuselect.wav");
+    }
+
+    playWin(){
+        if(!this.enabled){
+            return;
+        }
+
+        this.assetManager.playAsset("./assets/audio/newthingget.ogg");
+    }
+
+    playLose(){
+        if(!this.enabled){
+            return;
+        }
+
+        this.assetManager.playAsset("./assets/audio/losetrumpet.mp3");
+    }
+
+
+    volumeDown5(){
+
+        this.volume = Math.max(0, this.volume - 0.05);
+        this.assetManager.adjustVolume(this.volume);
+    }
+
+    volumeUp5(){
+
+        this.volume = Math.min(1, this.volume + 0.05);
+        this.assetManager.adjustVolume(this.volume);
+    }
+
+    volumeString(){
+        return (Math.round(this.volume * 100) + "%");
+    }
+
+
+}
