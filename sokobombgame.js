@@ -351,11 +351,10 @@ class GameLevel{
         
         // If press r reset the level if it should be reset.
         if (gameEngine.keys['r'] && this.hasMoved) {
-            
+            this.hasMoved = false;
             this.gameEngine.addEntity(new GameLevel(this.gameEngine, this.orginalLevelData, this.audioController,this.nextGameLevel, this.palette, this.gameplayData.maxMoves, this.x, this.y, this.scaleX, this.scaleY, this.startPosition, this.levelName));
             this.removeFromWorld = true; 
             this.audioController.playMoveUIButtonPress();
-            this.hasMoved = false;
             return;
         }
 
