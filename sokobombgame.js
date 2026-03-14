@@ -12,16 +12,31 @@ const INPUT_COOLDOWN = 0.15;
 const LEVEL_1_MAX_MOVES = 14;
 const LEVEL_2_MAX_MOVES = 22;
 const LEVEL_3_MAX_MOVES = 23;
+const LEVEL_4_MAX_MOVES = 33;
+const LEVEL_5_MAX_MOVES = 25;
+const LEVEL_6_MAX_MOVES = 28;
+const LEVEL_7_MAX_MOVES = 84;
+const LEVEL_8_MAX_MOVES = 23;
+const LEVEL_9_MAX_MOVES = 122;
+
 
 
 // VISUAL SCALE
 const LEVEL_1_SCALE = 6;
 const LEVEL_2_SCALE = 5;
 const LEVEL_3_SCALE = 5;
+const LEVEL_4_SCALE = 5;
+const LEVEL_5_SCALE = 5;
+const LEVEL_6_SCALE = 5;
+const LEVEL_7_SCALE = 4;
+const LEVEL_8_SCALE = 5;
+const LEVEL_9_SCALE = 3.5;
+
+
 
 // LEVEL DATA
 /*
- * U = empty goal
+ * E = empty goal
  * G = winning goal
  * B = box
  * # = wall
@@ -56,6 +71,71 @@ const GAME_LEVEL_3 = [
     "#---#----#",
     "#---E----#",
     "##########"
+]
+
+const GAME_LEVEL_4 = [
+    "#########0",
+    "#--E----#0",
+    "#--###--##",
+    "#--B-B-E-#",
+    "#-B------#",
+    "#---E----#",
+    "##########"
+]
+
+const GAME_LEVEL_5 = [
+    "##########",
+    "#--G---E-#",
+    "#---##---#",
+    "#--B#--B-#",
+    "#---#----#",
+    "#---E----#",
+    "##########"
+]
+
+const GAME_LEVEL_6 = [
+    "##########",
+    "#--E-----#",
+    "#---###--#",
+    "#--BE--B-#",
+    "#---#----#",
+    "#---E--B-#",
+    "##########"
+]
+
+const GAME_LEVEL_7 = [
+    "############",
+    "#--E-------#",
+    "#---#####--#",
+    "#---G----B-#",
+    "#---#--B---#",
+    "#---#------#",
+    "#---######-#",
+    "#---G----E-#",
+    "############"
+]
+
+const GAME_LEVEL_8 = [
+    "##########",
+    "#--E---E-#",
+    "#---#----#",
+    "#--B#B---#",
+    "#---G----#",
+    "#--------#",
+    "##########"
+]
+
+const GAME_LEVEL_9 = [
+    "############",
+    "#----------#",
+    "#--E-------#",
+    "#---#####--#",
+    "#---G-B-#B-#",
+    "#-B-#-E-G--#",
+    "#---#---#--#",
+    "#---#####--#",
+    "#---E----G-#",
+    "############"
 ]
 
 
@@ -135,7 +215,8 @@ class GameLevel{
         this.scaleY = scaleY;
         
         this.inputCounter = -1;
-        
+        this.hasMoved = false;
+
         // This is the actual level data, abstract later.
         // States PLAYING, WIN, IMPOSSIBLE, LOSE, DEBUG
         this.gameplayData = {wGoals: 0, rGoals: 0, boxCount: 0, movesMade: 0, maxMoves: maxMoves, state: "PLAYING"} // currently Won goals, required goals to win, box count
@@ -217,14 +298,15 @@ class GameLevel{
                         break;
                     case 'G': // goal that isnt in a winning state
                         //console.log("Goal " + i)
-                        throw new Error("Cannot start with a winning goal!")
+                        
+                        //throw new Error("Cannot start with a winning goal!")
                         
                 }
             }
         }
 
         if(this.gameplayData.boxCount < this.gameplayData.rGoals || this.gameplayData.rGoals <= 0){
-            throw new Error("Impossible to win! Increase box count or decrease goal count!")
+            throw new Error("Impossible to win! Increase box count or decrease goal count! \n boxes: " + this.gameplayData.boxCount + " goals: " + this.gameplayData.rGoals)
         }
     }
 
@@ -267,7 +349,16 @@ class GameLevel{
         
         
         
-        
+        // If press r reset the level if it should be reset.
+        if (gameEngine.keys['r'] && this.hasMoved) {
+            
+            this.gameEngine.addEntity(new GameLevel(this.gameEngine, this.orginalLevelData, this.audioController,this.nextGameLevel, this.palette, this.gameplayData.maxMoves, this.x, this.y, this.scaleX, this.scaleY, this.startPosition, this.levelName));
+            this.removeFromWorld = true; 
+            this.audioController.playMoveUIButtonPress();
+            this.hasMoved = false;
+            return;
+        }
+
         if(this.nextGameLevel !== null && this.nextGameLevel !== undefined){
             this.continueButton.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
         }
@@ -286,6 +377,8 @@ class GameLevel{
         const inputResult = gatherInput(this.gameEngine);
         const input = inputResult.result;
         
+        
+
         if (this.inputCounter > 0) {
             this.inputCounter -= deltaTime;
             return;
@@ -294,7 +387,7 @@ class GameLevel{
         if (!inputResult.anythingPressed) {
             return;
         }
-        
+
         // for multiple players have everything below this comment loop over a player list 
 
         this.player.characterFacing(input);
@@ -311,6 +404,7 @@ class GameLevel{
         // this needs the order changed down
         
         this.audioController?.playMoveSound();
+        this.hasMoved = true;
         //BOX PUSHING SYSTEM
 
         // if desired position is a box/bomb
