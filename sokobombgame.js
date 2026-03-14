@@ -347,17 +347,6 @@ class GameLevel{
         this.volumeDown5Button.enabled = this.audioController.volume > 0.04;
         this.volumeDown5Button.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
         
-        
-        
-        // If press r reset the level if it should be reset.
-        if (gameEngine.keys['r'] && this.hasMoved) {
-            this.hasMoved = false;
-            this.gameEngine.addEntity(new GameLevel(this.gameEngine, this.orginalLevelData, this.audioController,this.nextGameLevel, this.palette, this.gameplayData.maxMoves, this.x, this.y, this.scaleX, this.scaleY, this.startPosition, this.levelName));
-            this.removeFromWorld = true; 
-            this.audioController.playMoveUIButtonPress();
-            return;
-        }
-
         if(this.nextGameLevel !== null && this.nextGameLevel !== undefined){
             this.continueButton.updateButton(this.gameEngine.mouse, this.gameEngine.click, this.gameEngine);
         }
@@ -403,7 +392,6 @@ class GameLevel{
         // this needs the order changed down
         
         this.audioController?.playMoveSound();
-        this.hasMoved = true;
         //BOX PUSHING SYSTEM
 
         // if desired position is a box/bomb
